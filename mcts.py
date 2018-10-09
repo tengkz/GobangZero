@@ -20,7 +20,7 @@ PRIOR_EVEN = 4
 PUCT_C = 0.1
 EXPAND_VISITS = 1
 PROPORTIONAL_STAGE = 1
-N_SIMS = 10
+N_SIMS = 100
 
 def encode_position(position,board_transform=None):
     my_stones,their_stones,to_play = (
@@ -36,7 +36,7 @@ def encode_position(position,board_transform=None):
         elif char=='a':
             their_stones[row,col]=1
         if position.step%2 == 1:
-            to_play[row,col] = 0
+            to_play[row,col] = 1
     return np.stack((my_stones,their_stones,to_play),axis=-1)
 
 class TreeNode():
@@ -120,12 +120,15 @@ def tree_descend(tree):
         node.v += 1
         if node.children is None:
             node.expand()
+        if nodes[-1].pos.board.count('.')==0:
+            break
     #print '===step number in tree descend %d' % len(nodes)
     return nodes
 
 def tree_update(nodes,score):
-    for node in reversed(nodes[0:-1]):
-        node.w += score<0
+    # score must be -1.0
+    for node in reversed(nodes):
+        node.w += score>0
         score = -score
 
 def tree_search(tree,n_sims):
@@ -145,7 +148,8 @@ def tree_search(tree,n_sims):
             score = tree.net.predict_winrate(np.expand_dims(encode_position(last_node.pos),axis=0))
         tree_update(nodes,score)
     
-    return tree.best_move(tree.pos.step<=PROPORTIONAL_STAGE)
+    #return tree.best_move(tree.pos.step<=PROPORTIONAL_STAGE)
+    return tree.best_move()
 
 def play_and_train(net,i,batches_per_game=2):
     positions = []
@@ -153,12 +157,11 @@ def play_and_train(net,i,batches_per_game=2):
     tree.expand()
     while True:
         # tree search move one step
-        
         next_tree = tree_search(tree,N_SIMS)
         positions.append((tree.pos,tree.distribution()))
         tree = next_tree
-        #tree.pos.show()
-        #print 'Number of A is %d, number of a is %d' % (tree.pos.board.count('A'),tree.pos.board.count('a'))
+        tree.pos.show()
+        print 'Number of A is %d, number of a is %d' % (tree.pos.board.count('A'),tree.pos.board.count('a'))
         reward = tree.pos.reward()
         if reward!=0.0:
             # attention!!!
@@ -167,6 +170,9 @@ def play_and_train(net,i,batches_per_game=2):
                 score = -1.0
             else:
                 score = 1.0
+            #tree.expand()
+            #next_tree = tree_search(tree,N_SIMS)
+            #positions.append((tree.pos,tree.distribution()))
             break
         if tree.pos.step > N*N*2:
             score = 0.0
@@ -213,37 +219,39 @@ def self_play(net):
             print 'save model for game %d' % i
             net.save(i)
         # play with random player
-        win_num = 0
-        for j in range(100):
-            pos = Position(empty_board,'A',0,-1)
-            step = 0
-            while True:
-                pos_array = encode_position(pos)
-                pos_array_new = np.expand_dims(pos_array,axis=0)
-                dis = net.predict_distribution(pos_array_new)
-                index = np.argmax(dis)
-                while pos.board[index]!='.':
-                    dis[index] = 0.0
-                    index = np.argmax(dis)
-                if pos.board[index]!='.':
-                    win_num+=0.5
-                    break
-                if index == N*N:
-                    index = pos.pick_move()[0]
-                pos = pos.move(index)
-                if pos.reward()!=0:
-                    win_num+=1
-                    break
-                index2 = pos.pick_move()[0]
-                pos = pos.move(index2)
-                if pos.reward()!=0:
-                    break
-                step+=1
-                if step>=N*N:
-                    win_num+=0.5
-        win_ratio.append(1.0*win_num/100.0)
+        win_ratio.append(evaluate_random(net))
         print win_ratio
             
+def evaluate_random(net):
+    win_num = 0
+    for j in range(100):
+        pos = Position(empty_board,'A',0,-1)
+        step = 0
+        while True:
+            pos_array = encode_position(pos)
+            pos_array_new = np.expand_dims(pos_array,axis=0)
+            dis = net.predict_distribution(pos_array_new)
+            index = np.argmax(dis)
+            while pos.board[index]!='.':
+                dis[index] = 0.0
+                index = np.argmax(dis)
+            if pos.board[index]!='.':
+                win_num+=0.5
+                break
+            if index == N*N:
+                index = pos.pick_move()[0]
+            pos = pos.move(index)
+            if pos.reward()!=0:
+                win_num+=1
+                break
+            index2 = pos.pick_move()[0]
+            pos = pos.move(index2)
+            if pos.reward()!=0:
+                break
+            step+=1
+            if step>=N*N:
+                win_num+=0.5
+    return win_num/100.0
 
 if __name__ == '__main__':    
     net = GobangModel(N)
