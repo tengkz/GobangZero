@@ -15,11 +15,13 @@ from keras.layers.convolutional import Conv2D
 from keras.layers.merge import add
 from keras.optimizers import Adam
 
+import joblib
+
 MEMORY_SIZE = 3000
 
 class ResNet(object):
     def __init__(self,input_kernel_num=256,process_kernel_num=256,
-                 stage_num=3,kernel_width=3,kernel_height=3):
+                 stage_num=0,kernel_width=3,kernel_height=3):
         self.input_kernel_num = input_kernel_num
         self.process_kernel_num = process_kernel_num
         self.stage_num = stage_num
@@ -101,6 +103,7 @@ class GobangModel(object):
         for pos,dist in zip(positions,dists):
             this_game.append((pos,dist,result))
             result = -result
+        #joblib.dump(this_game,'dump.joblib',compress=5)
         print 'Attention!!! this game length is %d' % len(this_game)
         self.train_archive.extend(this_game)
         

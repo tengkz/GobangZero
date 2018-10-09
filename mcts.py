@@ -36,7 +36,7 @@ def encode_position(position,board_transform=None):
         elif char=='a':
             their_stones[row,col]=1
         if position.step%2 == 1:
-            to_play[row,col] = 1
+            to_play[row,col] = 0
     return np.stack((my_stones,their_stones,to_play),axis=-1)
 
 class TreeNode():
@@ -163,7 +163,10 @@ def play_and_train(net,i,batches_per_game=2):
         if reward!=0.0:
             # attention!!!
             print 'attention reward is ',reward
-            score = 1.0
+            if tree.pos.turn=='A':
+                score = -1.0
+            else:
+                score = 1.0
             break
         if tree.pos.step > N*N*2:
             score = 0.0
