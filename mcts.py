@@ -13,14 +13,14 @@ from net import GobangModel
 from board import Position
 from board import empty_board
 
-N = 13
+N = 9
 PRIOR_NET = 40
 TEMPERATURE = 2
 PRIOR_EVEN = 4
 PUCT_C = 0.1
 EXPAND_VISITS = 1
-PROPORTIONAL_STAGE = 1
-N_SIMS = 100
+PROPORTIONAL_STAGE = 3
+N_SIMS = 20
 
 def encode_position(position,board_transform=None):
     my_stones,their_stones,to_play = (
@@ -60,8 +60,7 @@ class TreeNode():
                 continue
             node = TreeNode(self.net,pos2)
             self.children.append(node)
-            row,col = c//N,c%N
-            value = distribution[row*N+col]
+            value = distribution[c]
             node.pv = PRIOR_NET
             node.pw = PRIOR_NET * value
         
@@ -87,8 +86,7 @@ class TreeNode():
         for child in self.children:
             p = float(child.v)/self.v
             c = child.pos.last
-            row,col = c//N,c%N
-            distribution[row*N+col] = p
+            distribution[c] = p
         return distribution
 
 def puct_urgency_input(nodes):
@@ -128,7 +126,7 @@ def tree_descend(tree):
 def tree_update(nodes,score):
     # score must be -1.0
     for node in reversed(nodes):
-        node.w += score>0
+        node.w += score<0
         score = -score
 
 def tree_search(tree,n_sims):
@@ -148,8 +146,8 @@ def tree_search(tree,n_sims):
             score = tree.net.predict_winrate(np.expand_dims(encode_position(last_node.pos),axis=0))
         tree_update(nodes,score)
     
-    #return tree.best_move(tree.pos.step<=PROPORTIONAL_STAGE)
-    return tree.best_move()
+    return tree.best_move(tree.pos.step<=PROPORTIONAL_STAGE)
+    #return tree.best_move()
 
 def play_and_train(net,i,batches_per_game=2):
     positions = []
@@ -160,8 +158,8 @@ def play_and_train(net,i,batches_per_game=2):
         next_tree = tree_search(tree,N_SIMS)
         positions.append((tree.pos,tree.distribution()))
         tree = next_tree
-        tree.pos.show()
-        print 'Number of A is %d, number of a is %d' % (tree.pos.board.count('A'),tree.pos.board.count('a'))
+        #tree.pos.show()
+        #print 'Number of A is %d, number of a is %d' % (tree.pos.board.count('A'),tree.pos.board.count('a'))
         reward = tree.pos.reward()
         if reward!=0.0:
             # attention!!!
@@ -244,7 +242,11 @@ def evaluate_random(net):
             if pos.reward()!=0:
                 win_num+=1
                 break
-            index2 = pos.pick_move()[0]
+            try:
+                index2 = pos.pick_move()[0]
+            except Exception:
+                win_num+=0.5
+                break
             pos = pos.move(index2)
             if pos.reward()!=0:
                 break

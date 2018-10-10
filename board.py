@@ -7,7 +7,7 @@ Created on Sun Oct  7 09:41:33 2018
 """
 import random
 
-N = 13
+N = 9
 
 empty_board = '.'*N*N
 
@@ -88,6 +88,7 @@ class Position(object):
         self.turn = turn
         self.step = step
         self.last = last
+        self.score = self._reward()
     
     def show(self):
         if self.turn=='a':
@@ -111,7 +112,7 @@ class Position(object):
     def pick_move(self):
         return random.sample(list(self.moves()),1)
     
-    def reward(self):
+    def _reward(self):
         # remember we always play as A
         if _win(self.board,'A'):
             return 1.0
@@ -119,6 +120,9 @@ class Position(object):
             return -1.0
         else:
             return 0.0
+    
+    def reward(self):
+        return self.score
     
     def flip_vert(self):
         new_board = bytearray('.'*N*N)

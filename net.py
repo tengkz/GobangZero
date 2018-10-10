@@ -17,10 +17,10 @@ from keras.optimizers import Adam
 
 import joblib
 
-MEMORY_SIZE = 3000
+MEMORY_SIZE = 30000
 
 class ResNet(object):
-    def __init__(self,input_kernel_num=256,process_kernel_num=256,
+    def __init__(self,input_kernel_num=32,process_kernel_num=32,
                  stage_num=0,kernel_width=3,kernel_height=3):
         self.input_kernel_num = input_kernel_num
         self.process_kernel_num = process_kernel_num
