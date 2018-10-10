@@ -234,14 +234,15 @@ def evaluate_random(net):
             pos_array_new = np.expand_dims(pos_array,axis=0)
             dis = net.predict_distribution(pos_array_new)
             index = np.argmax(dis)
-            while pos.board[index]!='.':
+            while index<N*N and pos.board[index]!='.':
                 dis[index] = 0.0
                 index = np.argmax(dis)
+            if index == N*N:
+                index = pos.pick_move()[0]
             if pos.board[index]!='.':
                 win_num+=0.5
                 break
-            if index == N*N:
-                index = pos.pick_move()[0]
+            
             pos = pos.move(index)
             if pos.reward()!=0:
                 win_num+=1

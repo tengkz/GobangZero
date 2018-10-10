@@ -20,8 +20,8 @@ import joblib
 MEMORY_SIZE = 30000
 
 class ResNet(object):
-    def __init__(self,input_kernel_num=32,process_kernel_num=32,
-                 stage_num=2,kernel_width=3,kernel_height=3):
+    def __init__(self,input_kernel_num=8,process_kernel_num=8,
+                 stage_num=0,kernel_width=3,kernel_height=3):
         self.input_kernel_num = input_kernel_num
         self.process_kernel_num = process_kernel_num
         self.stage_num = stage_num
@@ -91,11 +91,12 @@ class GobangModel(object):
         result = BatchNormalization(axis=3)(result)
         result = Activation('relu')(result)
         result = Flatten()(result)
-        result = Dense(256,activation='relu')(result)
+        #result = Dense(256,activation='relu')(result)
+        result = Dense(64,activation='relu')(result)
         result = Dense(1,activation='sigmoid',name='result')(result)
         
         self.model = Model(src,[dist,result])
-        self.model.compile(Adam(lr=2e-2),['mean_squared_error','binary_crossentropy'])
+        self.model.compile(Adam(lr=2e-3),['mean_squared_error','binary_crossentropy'])
         self.model.summary()
     
     def fit_game(self,positions,dists,result):
