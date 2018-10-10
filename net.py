@@ -20,8 +20,8 @@ import joblib
 MEMORY_SIZE = 30000
 
 class ResNet(object):
-    def __init__(self,input_kernel_num=2,process_kernel_num=2,
-                 stage_num=0,kernel_width=3,kernel_height=3):
+    def __init__(self,input_kernel_num=32,process_kernel_num=32,
+                 stage_num=2,kernel_width=3,kernel_height=3):
         self.input_kernel_num = input_kernel_num
         self.process_kernel_num = process_kernel_num
         self.stage_num = stage_num
@@ -64,7 +64,7 @@ class ResNet(object):
         return x
 
 class GobangModel(object):
-    def __init__(self,N,batch_size=32,max_fit_samples=512):
+    def __init__(self,N,batch_size=128,max_fit_samples=512):
         self.N = N
         self.batch_size = batch_size
         self.max_fit_samples = max_fit_samples
@@ -95,7 +95,7 @@ class GobangModel(object):
         result = Dense(1,activation='sigmoid',name='result')(result)
         
         self.model = Model(src,[dist,result])
-        self.model.compile(Adam(lr=2e-2),['categorical_crossentropy','binary_crossentropy'])
+        self.model.compile(Adam(lr=2e-2),['mean_squared_error','binary_crossentropy'])
         self.model.summary()
     
     def fit_game(self,positions,dists,result):
@@ -124,10 +124,12 @@ class GobangModel(object):
             y_dist.append(dist)
             y_result.append(float(result)/2.0+0.5)
             if len(X) % self.batch_size == 0:
-                self.model.train_on_batch(np.array(X),[np.array(y_dist),np.array(y_result)])
+                errors = self.model.train_on_batch(np.array(X),[np.array(y_dist),np.array(y_result)])
+                print "Training error: ",errors
                 X,y_dist,y_result = [],[],[]
         if len(X)>0:
-            self.model.train_on_batch(np.array(X),[np.array(y_dist),np.array(y_result)])
+            errors = self.model.train_on_batch(np.array(X),[np.array(y_dist),np.array(y_result)])
+            print "Training error: ",errors
     
     def predict(self,position):
         dist,res = self.model.predict(position)

@@ -20,7 +20,7 @@ PRIOR_EVEN = 4
 PUCT_C = 0.1
 EXPAND_VISITS = 1
 PROPORTIONAL_STAGE = 3
-N_SIMS = 10
+N_SIMS = 50
 
 def encode_position(position,board_transform=None):
     my_stones,their_stones,to_play = (
@@ -178,6 +178,10 @@ def play_and_train(net,i,batches_per_game=2):
         
     
     #print 'Begin fit_game=================='
+    X_positions = [encode_position(pos) for pos,dist in positions]
+    X_dists = [dist for pos,dist in positions]
+    net.fit_game(X_positions,X_dists,score)    
+
     X_positions = [encode_position(pos,board_transform='flip_vert') for pos,dist in positions]
     X_dists = [dist for pos,dist in positions]
     net.fit_game(X_positions,X_dists,score)
@@ -253,6 +257,7 @@ def evaluate_random(net):
             step+=1
             if step>=N*N:
                 win_num+=0.5
+    pos.show()
     return win_num/100.0
 
 if __name__ == '__main__':    
