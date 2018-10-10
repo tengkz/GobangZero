@@ -20,7 +20,7 @@ PRIOR_EVEN = 4
 PUCT_C = 0.1
 EXPAND_VISITS = 1
 PROPORTIONAL_STAGE = 3
-N_SIMS = 20
+N_SIMS = 100
 
 def encode_position(position,board_transform=None):
     my_stones,their_stones,to_play = (
