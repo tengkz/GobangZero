@@ -113,7 +113,10 @@ def tree_descend(tree):
             dirichlet = np.random.dirichlet((0.03,1),len(children))
             urgencies = urgencies*0.75 + dirichlet[:,0]*0.25
             root = False
-        node = max(zip(children,urgencies),key=lambda t:t[1])[0]
+        #node = max(zip(children,urgencies),key=lambda t:t[1])[0]
+        sum_urgencies = sum(urgencies)
+        node_index = np.random.choice(len(children),p=urgencies/sum_urgencies)
+        node = children[node_index]
         nodes.append(node)
         node.v += 1
         if node.children is None:
@@ -261,7 +264,38 @@ def evaluate_random(net):
     pos.show()
     return win_num/100.0
 
+def random_to_random():
+    win_num = 0
+    for j in range(10000):
+        pos = Position(empty_board,'A',0,-1)
+        step = 0
+        while True:
+            try:
+                index = pos.pick_move()[0]
+            except Exception:
+                win_num+=0.5
+                break
+            pos = pos.move(index)
+            if pos.reward()!=0:
+                win_num+=1
+                break
+            try:
+                index2 = pos.pick_move()[0]
+            except Exception:
+                win_num+=0.5
+                break
+            pos = pos.move(index2)
+            if pos.reward()!=0:
+                break
+            step+=1
+            if step>=N*N:
+                win_num+=0.5
+    pos.show()
+    return win_num/100.0
+
 if __name__ == '__main__':    
     net = GobangModel(N)
     net.create()
     self_play(net)
+#    ret = random_to_random()
+#    print ret

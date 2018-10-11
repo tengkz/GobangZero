@@ -20,8 +20,8 @@ import joblib
 MEMORY_SIZE = 30000
 
 class ResNet(object):
-    def __init__(self,input_kernel_num=8,process_kernel_num=8,
-                 stage_num=0,kernel_width=3,kernel_height=3):
+    def __init__(self,input_kernel_num=32,process_kernel_num=32,
+                 stage_num=1,kernel_width=3,kernel_height=3):
         self.input_kernel_num = input_kernel_num
         self.process_kernel_num = process_kernel_num
         self.stage_num = stage_num
