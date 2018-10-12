@@ -30,7 +30,8 @@ class TreeNode(object):
         probs_total = sum(probs)
         real_probs = [prob/probs_total for prob in probs]
         if sum(probs)<0.5:
-            print 'hello'
+            print probs
+            
         return np.random.choice(self.children.values(),p=real_probs)
     
     def best_move(self):
