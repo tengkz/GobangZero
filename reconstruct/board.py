@@ -58,9 +58,19 @@ class Board(object):
             return False,-1
         return False,0
     
+    def copy(self):
+        b = Board(self.N)
+        b.state = self.state.copy()
+        b.step = self.step
+        b.possible_moves_set = self.possible_moves_set.copy()
+        b.turn = self.turn
+        b.last = self.last
+        return b
+    
     def show(self):
         for row in range(self.N):
             print ''.join([str(item) for item in self.state[row*self.N:(row+1)*self.N]])
+    
 
 class Game(object):
     def __init__(self,N):
@@ -81,7 +91,7 @@ class Game(object):
             self.board.move(move)
             win,winner = self.board.is_finish()
             if win:
-                #self.board.show()
+                self.board.show()
                 return winner
         return -1
     
