@@ -7,6 +7,8 @@ Created on Fri Oct 12 00:09:11 2018
 """
 import numpy as np
 from operator import itemgetter
+from board import Board
+from net import Net
 
 GAMMA = 0.99
 
@@ -38,11 +40,12 @@ class TreeNode(object):
         return self.parent is None
 
 class MCTS(object):
-    def __init__(self,c_puct,tau,n_sims):
+    def __init__(self,c_puct,tau,n_sims,network):
         self.c_puct = c_puct
         self.tau = tau
         self.n_sims = n_sims
         self.root = TreeNode(None,1.0)
+        self.network = network
     
     def select(self,board):
         """select a path from root to leaf"""
@@ -57,27 +60,32 @@ class MCTS(object):
     
     def expand(self,node,board):
         """expand a node based on board state"""
-        possible_moves_num = len(board.possible_moves_set)
-        for move in board.possible_moves_set:
-            node.children[move] = TreeNode(node,1.0/possible_moves_num)
+#        possible_moves_num = len(board.possible_moves_set)
+#        for move in board.possible_moves_set:
+#            node.children[move] = TreeNode(node,1.0/possible_moves_num)
+        policy,value = self.network.policy_and_value(board)
+        for move,prob in policy:
+            node.children[move] = TreeNode(node,prob)
     
     def evaluate(self,board):
         """evaluate a board state by random move"""
-        current_player = board.turn
-        while True:
-            finish,winner = board.is_finish()
-            if finish:
-                if winner == current_player:
-                    return 1.0
-                elif winner == current_player%2+1:
-                    return -1.0
-                else:
-                    return 0.0
-            if len(board.possible_moves_set)==0:
-                return 0.0
-            move = np.random.choice(list(board.possible_moves_set))
-            board.move(move)
-        return 0.0
+#        current_player = board.turn
+#        while True:
+#            finish,winner = board.is_finish()
+#            if finish:
+#                if winner == current_player:
+#                    return 1.0
+#                elif winner == current_player%2+1:
+#                    return -1.0
+#                else:
+#                    return 0.0
+#            if len(board.possible_moves_set)==0:
+#                return 0.0
+#            move = np.random.choice(list(board.possible_moves_set))
+#            board.move(move)
+#        return 0.0
+        policy,value = self.network.policy_and_value(board)
+        return 2.0*value-1.0
     
     def backup(self,leaf_node,score):
         """update backup"""
@@ -110,15 +118,47 @@ class MCTS(object):
             # backup
             self.backup(leaf_node,-score)
 
-class MCTS_player(object):
-    def __init__(self):
-        self.mcts = MCTS(10.0,1.0,500)
-    def pick_move(self,board):
-        self.mcts.search(board)
-        print [(move,child.w,child.n) for move,child in self.mcts.root.children.items()]
-        return self.mcts.best_move()
-    def update(self,last_move):
-        if last_move in self.mcts.root.children:
-            self.mcts.root = self.mcts.root.children[last_move]
-        else:
-            self.mcts = MCTS(10.0,1.0,500)
+class MCTS_selfplay(object):
+    def __init__(self,mcts):
+        self.mcts = mcts
+    
+    def distribution(self,node,N):
+        dist = np.zeros([N*N])
+        for move,child in node.children.iteritems():
+            dist[move] = child.w/child.n if child.n>0 else 0.0
+        return dist
+    
+    def self_play(self):
+        state_and_dist = []
+        self.mcts.root = TreeNode(None,1.0)
+        board = Board(9)
+        while len(board.possible_moves_set)>0:
+            print '==========='
+            board.show()
+            self.mcts.search(board)
+            dist = self.distribution(self.mcts.root,board.N)
+            move = self.mcts.best_move()
+            current_state = board.get_state()
+            board.move(move)
+            state_and_dist.append((current_state,dist))
+            finish,winner = board.is_finish()
+            if finish:
+                return state_and_dist,1.0
+        return state_and_dist,0.0
+    
+    def train(self):
+        i = 0
+        while True:
+            print 'Iteration %d' % i
+            state_and_dist,score = self.self_play()
+            STATE,DIST,SCORE = [],[],[]
+            for state,dist in state_and_dist:
+                STATE.append(state)
+                DIST.append(dist)
+                SCORE.append(score)
+                score = -score
+            errors = self.mcts.network.model.train_on_batch(np.array(STATE),[np.array(DIST),np.array(SCORE)])
+            print 'Errors ',errors
+            
+            
+            

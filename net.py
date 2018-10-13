@@ -54,7 +54,6 @@ class ResNet(object):
         x = BatchNormalization(axis=3,name=bn_name_base+'a')(x)
         x = Activation('relu')(x)
         
-        x = input_tensor
         x = Conv2D(filter_num,(self.kernel_width,self.kernel_height),
                    padding='same',name=conv_name_base+'b')(x)
         x = BatchNormalization(axis=3,name=bn_name_base+'b')(x)

@@ -31,15 +31,15 @@ class Board(object):
     
     def get_state(self):
         N = self.N
-        np_state = np.zeros((4,N,N),dtype=np.float32)
+        np_state = np.zeros((N,N,4),dtype=np.float32)
         if self.step>0:
             index_current = np.where(self.state==self.turn)[0]
             index_last = np.where(self.state==(self.turn%2+1))[0]
-            np_state[0][index_current/N,index_current%N] = 1.0
-            np_state[1][index_last/N,index_last%N] = 1.0
-            np_state[2][self.last//N,self.last%N] = 1.0
+            np_state[index_current/N,index_current%N,0] = 1.0
+            np_state[index_last/N,index_last%N,1] = 1.0
+            np_state[self.last//N,self.last%N,2] = 1.0
         if self.step%2==0:
-            np_state[3][:,:] = 1.0
+            np_state[:,:,3] = 1.0
         return np_state
     
     def is_finish(self):
@@ -86,8 +86,10 @@ class Game(object):
         while self.board.step<N*N:
             if self.board.step%2==0:
                 move = player1.pick_move(self.board)
+                player2.update(move)
             else:
                 move = player2.pick_move(self.board)
+                player1.update(move)
             self.board.move(move)
             win,winner = self.board.is_finish()
             if win:
@@ -101,3 +103,18 @@ class Game(object):
 class Random_player(object):
     def pick_move(self,board):
         return np.random.choice(board.possible_moves(),1)[0]
+    def update(self,last_move):
+        pass
+
+class Human_player(object):
+    def pick_move(self,board):
+        while True:
+            action = raw_input("your turn:")
+            row,col = action.split(',')
+            move = int(row)*board.N+int(col)
+            if move not in board.possible_moves_set:
+                print 'Wrong move, please input again!'
+                continue
+            return move
+    def update(self,last_move):
+        pass
